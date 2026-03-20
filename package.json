@@ -1,0 +1,48 @@
+{
+  "name": "linkedin-post-decoder",
+  "version": "1.0.0",
+  "description": "Extract timestamps, engagement metrics, and metadata from LinkedIn post URLs. Zero dependencies.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test dist/test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "linkedin",
+    "post",
+    "timestamp",
+    "analytics",
+    "engagement",
+    "metadata",
+    "activity-id",
+    "social-media"
+  ],
+  "author": "McEachen & Co. <ben@mceachen.co>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mceachen-co/linkedin-post-decoder.git"
+  },
+  "homepage": "https://mceachen.co/tools/linkedin-post-analyzer",
+  "bugs": {
+    "url": "https://github.com/mceachen-co/linkedin-post-decoder/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.7.0"
+  }
+}

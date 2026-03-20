@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Post Analyzer - Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #faf8f6;
+      padding: 2rem 1rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { color: #666; font-size: 0.95rem; margin-bottom: 2rem; }
+    a { color: #d97f3a; }
+
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e8e6e3;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      background: #fff;
+    }
+    input:focus, textarea:focus { outline: none; border-color: #d97f3a; }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #d97f3a;
+      color: #fff;
+      margin-top: 0.75rem;
+    }
+    button:hover { background: #c06d2d; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e8e6e3;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      margin-bottom: 0.75rem;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media (max-width: 500px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+    .field-label { font-size: 0.75rem; color: #666; margin-bottom: 0.15rem; }
+    .field-value { font-size: 1rem; font-weight: 500; }
+
+    .note {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e8e6e3;
+    }
+
+    .hidden { display: none; }
+    .error { color: #d97f3a; font-size: 0.85rem; margin-top: 0.5rem; }
+
+    hr { border: none; border-top: 1px solid #e8e6e3; margin: 2rem 0; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+
+    .batch-actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      justify-content: flex-end;
+    }
+    .batch-actions button {
+      width: auto;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      margin-top: 0;
+      background: transparent;
+      color: #d97f3a;
+      border: 1px solid #d97f3a;
+    }
+    .batch-actions button:hover { background: #d97f3a; color: #fff; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+         letter-spacing: 0.06em; color: #666; padding: 0.5rem; border-bottom: 2px solid #e8e6e3; }
+    td { padding: 0.5rem; border-bottom: 1px solid #e8e6e3; }
+  </style>
+</head>
+<body>
+
+  <h1>LinkedIn Post Analyzer</h1>
+  <p class="subtitle">
+    Extract the exact publish date and time from any LinkedIn post URL.
+    Client-side only. No data leaves your browser.
+    <a href="https://github.com/mceachen-co/linkedin-post-decoder">View source</a>
+  </p>
+
+  <!-- Single URL -->
+  <form id="single-form">
+    <label for="post-url">LinkedIn Post URL</label>
+    <input type="text" id="post-url" placeholder="https://www.linkedin.com/posts/..." required>
+    <button type="submit" id="analyze-btn">Analyze Post</button>
+  </form>
+
+  <div id="single-error" class="error hidden"></div>
+
+  <div id="single-result" class="card hidden">
+    <p class="section-title">Post Timing</p>
+    <div class="grid">
+      <div>
+        <p class="field-label">Date &amp; Time (PT)</p>
+        <p class="field-value" id="res-timestamp">-</p>
+      </div>
+      <div>
+        <p class="field-label">Day of Week</p>
+        <p class="field-value" id="res-day">-</p>
+      </div>
+      <div>
+        <p class="field-label">Hour (PT)</p>
+        <p class="field-value" id="res-hour">-</p>
+      </div>
+    </div>
+    <div style="margin-top: 0.75rem;">
+      <p class="field-label">ISO Timestamp</p>
+      <p class="field-value" style="font-size: 0.85rem; font-family: monospace;" id="res-iso">-</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Batch -->
+  <h2>Batch Analysis</h2>
+  <p class="subtitle" style="margin-bottom: 1rem;">Paste up to 25 URLs, one per line.</p>
+
+  <form id="batch-form">
+    <label for="batch-urls">Post URLs (one per line)</label>
+    <textarea id="batch-urls" rows="5" placeholder="https://www.linkedin.com/posts/...&#10;https://www.linkedin.com/posts/..." required></textarea>
+    <button type="submit" id="batch-btn">Analyze All Posts</button>
+  </form>
+
+  <div id="batch-error" class="error hidden"></div>
+
+  <div id="batch-results" class="hidden" style="margin-top: 1.25rem;">
+    <div class="batch-actions">
+      <button id="copy-btn">Copy Table</button>
+      <button id="csv-btn">Export CSV</button>
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date (PT)</th>
+            <th>Day</th>
+            <th>Hour</th>
+            <th>Activity ID</th>
+          </tr>
+        </thead>
+        <tbody id="batch-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>How it works:</strong> Every LinkedIn post URL contains an activity ID.
+    The upper bits of this 19-digit number encode the exact publish time in Unix milliseconds.
+    This tool decodes it with a bit-shift: <code>(activityId &gt;&gt; 22) = timestamp</code>.
+    No API key or authentication needed.
+    <br><br>
+    Built by <a href="https://mceachen.co">McEachen &amp; Co.</a>
+  </div>
+
+<script>
+  // --- Core library (inlined for zero-dependency demo) ---
+
+  function parseLinkedInUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    const postsMatch = trimmed.match(/linkedin\.com\/posts\/([^/]+?)[\w-]*-(?:activity|share)-(\d{19,20})/);
+    if (postsMatch) return { activityId: postsMatch[2], authorSlug: postsMatch[1] };
+    const feedMatch = trimmed.match(/linkedin\.com\/feed\/update\/urn:li:activity:(\d{19,20})/);
+    if (feedMatch) return { activityId: feedMatch[1] };
+    const bareMatch = trimmed.match(/^(\d{19,20})$/);
+    if (bareMatch) return { activityId: bareMatch[1] };
+    return null;
+  }
+
+  function decodeTimestamp(activityId) {
+    return new Date(Number(BigInt(activityId) >> 22n));
+  }
+
+  function formatPT(date) {
+    return date.toLocaleString('en-US', {
+      timeZone: 'America/Los_Angeles', weekday: 'short', year: 'numeric',
+      month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit',
+      second: '2-digit', hour12: true,
+    });
+  }
+
+  function getDayPT(date) {
+    return date.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'long' });
+  }
+
+  function getHourPT(date) {
+    return parseInt(date.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', hour12: false }), 10);
+  }
+
+  // --- Batch data store ---
+  let batchData = [];
+
+  // --- Single form ---
+  document.getElementById('single-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const url = document.getElementById('post-url').value;
+    document.getElementById('single-result').classList.add('hidden');
+    document.getElementById('single-error').classList.add('hidden');
+
+    const parsed = parseLinkedInUrl(url);
+    if (!parsed) {
+      document.getElementById('single-error').textContent = 'Not a recognized LinkedIn post URL.';
+      document.getElementById('single-error').classList.remove('hidden');
+      return;
+    }
+
+    const date = decodeTimestamp(parsed.activityId);
+    document.getElementById('res-timestamp').textContent = formatPT(date);
+    document.getElementById('res-day').textContent = getDayPT(date);
+    document.getElementById('res-hour').textContent = getHourPT(date) + ':00 PT';
+    document.getElementById('res-iso').textContent = date.toISOString();
+    document.getElementById('single-result').classList.remove('hidden');
+  });
+
+  // --- Batch form ---
+  document.getElementById('batch-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = document.getElementById('batch-urls').value;
+    const urls = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const tbody = document.getElementById('batch-tbody');
+    const error = document.getElementById('batch-error');
+
+    error.classList.add('hidden');
+    document.getElementById('batch-results').classList.add('hidden');
+    tbody.innerHTML = '';
+    batchData = [];
+
+    if (urls.length === 0) return;
+    if (urls.length > 25) {
+      error.textContent = 'Maximum 25 URLs per batch.';
+      error.classList.remove('hidden');
+      return;
+    }
+
+    for (const url of urls) {
+      const parsed = parseLinkedInUrl(url);
+      if (!parsed) { batchData.push({ url, error: true }); continue; }
+      const date = decodeTimestamp(parsed.activityId);
+      batchData.push({
+        url, activityId: parsed.activityId,
+        timestamp: formatPT(date), iso: date.toISOString(),
+        day: getDayPT(date), hour: getHourPT(date),
+      });
+    }
+
+    for (const row of batchData) {
+      if (row.error) continue;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${row.timestamp}</td><td>${row.day}</td><td>${row.hour}:00</td><td style="font-family:monospace;font-size:0.8rem">${row.activityId}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    document.getElementById('batch-results').classList.remove('hidden');
+  });
+
+  // --- Copy table ---
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    const header = 'Date (PT)\tDay\tHour (PT)\tActivity ID';
+    const rows = batchData.filter(r => !r.error).map(r =>
+      [r.timestamp, r.day, r.hour + ':00', r.activityId].join('\t')
+    );
+    await navigator.clipboard.writeText([header, ...rows].join('\n'));
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy Table'; }, 2000);
+  });
+
+  // --- CSV export ---
+  document.getElementById('csv-btn').addEventListener('click', () => {
+    if (batchData.length === 0) return;
+    const headers = ['URL', 'Activity ID', 'Timestamp (PT)', 'Timestamp (ISO)', 'Day', 'Hour (PT)'];
+    const rows = batchData.filter(r => !r.error).map(r =>
+      [r.url, r.activityId, r.timestamp, r.iso, r.day, r.hour].join(',')
+    );
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'linkedin-posts-' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+</script>
+
+</body>
+</html>
